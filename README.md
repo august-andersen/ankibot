@@ -1,6 +1,6 @@
 # ankibot
 
-Turn any folder of multimedia materials into an importable .apkg file.
+Turn any folder of multimedia materials into an importable .apkg file through a multistage AI orchestration workflow.
 
 ## Installation
 
@@ -24,7 +24,11 @@ cd ~/my-multimedia-materials
 ankibot
 ```
 
-ankibot scans the current directory, asks for a deck name and detail level, generates flashcards with Claude, and saves an `.apkg` file ready to import into Anki.
+ankibot scans the current directory, asks for a deck name and detail level, executes the workflow, and saves an `.apkg` file ready to import into Anki. Workflow:
+1. Classifies and extracts file contents with format-specific parsers and Claude vision for OCR/visual interpretation
+2. Content payloads are chunked into context-window-optimized batches
+3. Batches are sent to Claude via API with a system prompt and deck-specific context. Output is parsed, validated, and deduplicated.
+4. Cards are compiled into a styled Anki deck with formatting, tags, and a consistent note model, then packaged as an importable `.apkg` file.
 
 ## Supported File Types
 

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ankibot"
+version = "0.1.0"
+description = "Turn any folder of study materials into Anki flashcards."
+requires-python = ">=3.9"
+license = "MIT"
+dependencies = [
+    "anthropic",
+    "genanki",
+    "PyMuPDF",
+    "python-docx",
+    "python-pptx",
+    "Pillow",
+]
+
+[project.scripts]
+ankibot = "ankibot.cli:main"

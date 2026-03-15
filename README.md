@@ -4,9 +4,19 @@ Turn any folder of multimedia materials into an importable .apkg file through a 
 
 ## Installation
 
+**Recommended (pipx):**
 ```bash
-git clone https://github.com/yourusername/ankibot.git
+git clone https://github.com/august-andersen/ankibot.git
 cd ankibot
+pipx install .
+```
+
+**Alternative (pip + venv):**
+```bash
+git clone https://github.com/august-andersen/ankibot.git
+cd ankibot
+python3 -m venv .venv
+source .venv/bin/activate
 pip install .
 ```
 

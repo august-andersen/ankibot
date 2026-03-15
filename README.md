@@ -1,6 +1,6 @@
-# AnkiBot
+# ankibot
 
-Turn any folder of study materials into Anki flashcards.
+Turn any folder of multimedia materials into an importable .apkg file.
 
 ## Installation
 
@@ -12,19 +12,19 @@ pip install .
 
 ## API Key Setup
 
-AnkiBot uses the Anthropic API. Set your key one of two ways:
+ankibot uses Anthropic API. Set your key one of two ways:
 
 - **Environment variable** (takes priority): `export ANTHROPIC_API_KEY=sk-ant-...`
-- **First-run prompt**: AnkiBot will ask for your key and save it to `~/.ankibot/config.json`
+- **First-run prompt**: ankibot will ask for your key and save it to `~/.ankibot/config.json`
 
 ## Usage
 
 ```bash
-cd ~/my-study-materials
+cd ~/my-multimedia-materials
 ankibot
 ```
 
-AnkiBot scans the current directory, asks for a deck name and detail level, generates flashcards with Claude, and saves an `.apkg` file ready to import into Anki.
+ankibot scans the current directory, asks for a deck name and detail level, generates flashcards with Claude, and saves an `.apkg` file ready to import into Anki.
 
 ## Supported File Types
 

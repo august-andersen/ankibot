@@ -34,6 +34,10 @@ def main():
         print("Error: Deck name cannot be empty.")
         return
 
+    print("Detail levels:")
+    print("  1 — Quick    (~20-30 cards, key concepts only)")
+    print("  2 — Standard (~50-80 cards, thorough coverage)")
+    print("  3 — Deep     (100+ cards, exhaustive, multiple card types per concept)")
     while True:
         level_input = input("Detail level (1-3): ").strip()
         if level_input in ("1", "2", "3"):
@@ -75,7 +79,14 @@ def main():
         print("No flashcards were generated. Check your API key and try again.")
         return
 
-    print(f"  Generated {len(cards)} cards.")
+    # Summarize by model type
+    from collections import Counter
+    model_counts = Counter(c.get("model", "basic") for c in cards)
+    subdeck_count = len({c.get("subdeck", "") for c in cards} - {""})
+    parts = [f"{count} {model}" for model, count in sorted(model_counts.items())]
+    print(f"  Generated {len(cards)} cards ({', '.join(parts)})")
+    if subdeck_count:
+        print(f"  Organized into {subdeck_count} subdeck{'s' if subdeck_count != 1 else ''}")
 
     filepath = create_deck(deck_name, cards, str(cwd))
     print(f"\n✅ Saved: {filepath}\n")

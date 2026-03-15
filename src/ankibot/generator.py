@@ -14,22 +14,69 @@ CONTENT_TOKEN_LIMIT = 150000
 CHARS_PER_TOKEN = 4  # rough estimate
 
 
-SYSTEM_PROMPT = """You are a flashcard generation expert. Your task is to analyze study material and generate high-quality Anki flashcards.
+SYSTEM_PROMPT = """\
+You are a flashcard generation expert producing Anki cards from study material.
+Output ONLY a valid JSON array — no markdown fences, no explanation, no preamble.
 
-Rules:
-1. Analyze the study material thoroughly.
-2. Generate flashcards as a JSON array. Each card has "front" (question), "back" (answer), and optionally "tags" (1-2 broad topic tags).
-3. Each card's "back" must be a complete, self-contained answer — not just a single word.
-4. Output ONLY valid JSON — an array of card objects. No markdown fences, no explanation, no preamble.
+=== ABSOLUTE RULES ===
+1. ANSWERS MUST BE 1-3 WORDS. Never a sentence. If the answer exceeds 4-5 words, split the card or make the question more specific. Push specificity into the question; keep the answer atomic.
+2. ONE FACT PER CARD. Never use "What are the...", "List the...", "Name the..." — these ask for sets. Each card targets exactly one item.
+3. NO TEACHING. Assume the user already understands the material. No "X is a process in which..." framing. Cards are pure recall triggers — precise cue on front, minimal answer on back.
+4. EXTRA FIELD is almost always "" — only populate for disambiguation ("Not to be confused with NADH") or source references ("p.142"). No obvious or descriptive text.
+5. 8-SECOND TEST: a prepared student must be able to answer within 8-10 seconds. If not, simplify or split.
 
-Example output format:
-[{"front":"What is X?","back":"X is...","tags":["topic"]}]"""
+=== CARD MODELS ===
+Each card object MUST include a "model" field set to one of:
+
+"basic" — Forward only. One-directional facts.
+  Fields: {"model":"basic", "front":"...", "back":"...", "extra":"", "tags":[...]}
+
+"reversed" — Generates two cards (both directions). Use for term↔definition, word↔translation.
+  Both directions MUST make sense as standalone questions.
+  Fields: {"model":"reversed", "front":"...", "back":"...", "extra":"", "tags":[...]}
+
+"multi" — Complex concepts needing multiple angles. Up to 3 detail fields.
+  Fields: {"model":"multi", "concept":"...", "detail1":"...", "detail2":"...", "detail3":"...", "extra":"", "tags":[...]}
+  detail2 and detail3 may be "" if not needed. detail1 is required.
+
+=== SUBDECKS ===
+Each card MUST include a "subdeck" field — a string using :: delimiters for hierarchy (e.g., "Cell Biology::Organelles").
+- Group cards into logical subdecks by broad topic area.
+- Do NOT over-granulate — avoid micro-topic subdecks. Use tags for fine-grained filtering instead.
+- For single-topic material, use a single subdeck name matching the overall topic.
+
+=== TAGS ===
+Tag EVERY card with ALL applicable tags from these categories:
+- topic/chapter (e.g., "mitosis", "chapter-3", "thermodynamics")
+- difficulty: one of "basic", "intermediate", "advanced"
+- card-type: one of "definition", "concept", "procedure", "formula", "example", "comparison"
+- priority: one of "high", "medium", "low"
+Tags must use lowercase-kebab-case. Be consistent across all cards.
+
+=== QUALITY ===
+- No duplicate front fields within a model type.
+- All cards must be atomic (one fact).
+- Reversed cards must make sense read in BOTH directions.
+- Consistent tag naming across the entire output."""
 
 
 DETAIL_INSTRUCTIONS = {
-    1: "Detail level: BASICS ONLY. Generate ~1 card per key concept. Focus on definitions, names, dates, and core facts. Cards should test simple recall.",
-    2: "Detail level: FUNDAMENTAL UNDERSTANDING. Generate ~2-3 cards per key concept. Include 'why' and 'how' cards, relationships between concepts, and conceptual understanding.",
-    3: "Detail level: HIGHLY DETAILED. Generate ~4-5 cards per key concept. Include edge cases, nuance, comparisons, implications, and deep connections across topics.",
+    1: (
+        "LEVEL: QUICK (~20-30 cards total). "
+        "Key concepts only. Cover the most important definitions, facts, and terms. "
+        "Use 'basic' model for most cards; 'reversed' only for essential term↔definition pairs."
+    ),
+    2: (
+        "LEVEL: STANDARD (~50-80 cards total). "
+        "Thorough coverage. Cover all significant concepts, relationships, and processes. "
+        "Mix 'basic', 'reversed', and 'multi' models as appropriate for each concept."
+    ),
+    3: (
+        "LEVEL: DEEP (100+ cards total). "
+        "Exhaustive coverage. Multiple card types per concept — use all models. "
+        "Include edge cases, comparisons, nuance, and connections across topics. "
+        "Every concept should have basic, reversed, AND multi-angle cards where applicable."
+    ),
 }
 
 
@@ -89,12 +136,38 @@ def _parse_cards(response_text: str) -> list[dict]:
 
     valid = []
     for card in cards:
-        if isinstance(card, dict) and "front" in card and "back" in card:
+        if not isinstance(card, dict):
+            continue
+        model = card.get("model", "basic")
+        subdeck = str(card.get("subdeck", ""))
+        tags = card.get("tags", [])
+        extra = str(card.get("extra", ""))
+
+        if model == "multi":
+            if "concept" not in card or "detail1" not in card:
+                continue
             valid.append({
+                "model": "multi",
+                "concept": str(card["concept"]),
+                "detail1": str(card["detail1"]),
+                "detail2": str(card.get("detail2", "")),
+                "detail3": str(card.get("detail3", "")),
+                "extra": extra,
+                "tags": tags,
+                "subdeck": subdeck,
+            })
+        elif model in ("basic", "reversed"):
+            if "front" not in card or "back" not in card:
+                continue
+            valid.append({
+                "model": model,
                 "front": str(card["front"]),
                 "back": str(card["back"]),
-                "tags": card.get("tags", []),
+                "extra": extra,
+                "tags": tags,
+                "subdeck": subdeck,
             })
+        # Silently skip unrecognized models
     return valid
 
 
@@ -133,11 +206,15 @@ def generate_cards(
             cards = _call_claude(client, content, retry=True)
             all_cards.extend(cards)
 
-    # Deduplicate by front text
+    # Deduplicate by front text (per model type, per spec)
     seen = set()
     unique = []
     for card in all_cards:
-        key = card["front"].strip().lower()
+        model = card.get("model", "basic")
+        if model == "multi":
+            key = (model, card["concept"].strip().lower())
+        else:
+            key = (model, card["front"].strip().lower())
         if key not in seen:
             seen.add(key)
             unique.append(card)

@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
 </p>
 
-<p align="center">Turn any folder of multimedia materials into an importable .apkg file through a multistage AI orchestration workflow.</p>
+<p align="center">Turn any folder of multimedia materials into an importable .apkg file through a multistage AI workflow.</p>
 
 ## Installation
 

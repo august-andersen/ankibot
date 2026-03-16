@@ -1,6 +1,17 @@
-# ankibot
+<p align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/3/3d/Anki-icon.svg" alt="Anki" width="80">
+</p>
 
-Turn any folder of multimedia materials into an importable .apkg file through a multistage AI orchestration workflow.
+<h1 align="center">ankibot</h1>
+
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.9+-3776AB?logo=python&logoColor=white" alt="Python 3.9+"></a>
+  <a href="https://docs.anthropic.com/"><img src="https://img.shields.io/badge/Anthropic-Claude_API-191919?logo=anthropic&logoColor=white" alt="Claude API"></a>
+  <a href="https://apps.ankiweb.net/"><img src="https://img.shields.io/badge/export-.apkg-326CE5" alt=".apkg"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
+</p>
+
+<p align="center">Turn any folder of multimedia materials into an importable .apkg file through a multistage AI orchestration workflow.</p>
 
 ## Installation
 
